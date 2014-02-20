@@ -53,7 +53,7 @@ public class BluetoothConnection extends Thread {
         }
       });
       
-      mmSocket = mmDevice.createRfcommSocketToServiceRecord(uuid);
+      mmSocket = mmDevice.createInsecureRfcommSocketToServiceRecord(uuid);//.createRfcommSocketToServiceRecord(uuid);
       mmSocket.connect();
 
       mmHandler.post(new Runnable() {
@@ -74,7 +74,9 @@ public class BluetoothConnection extends Thread {
 
               Log.i("BluetoothConnection", "Reading " + bytes + " bytes");
               byte buffer[] = new byte[bytes];
-              is.read(buffer);
+              for(int offset = 0;offset < bytes;) {
+                offset += is.read(buffer, offset, bytes - offset);
+              }
               
               try {
                 RpcMessage rpc = wire.parseFrom(buffer, RpcMessage.class);
@@ -104,12 +106,20 @@ public class BluetoothConnection extends Thread {
       OutputStream os = mmSocket.getOutputStream();
       
       byte buffer[] = rpc.toByteArray();
+      byte toSend[] = new byte[rpc.toByteArray().length + 2];
       
       //Write out the length of the message
-      os.write(0xFF & (buffer.length >> 8));
-      os.write(0xFF & buffer.length);
+      toSend[0] = (byte) (0xFF & (buffer.length >> 8));
+      toSend[1] = (byte) (0xFF & buffer.length);
 
-      os.write(buffer);
+      
+
+      rpc.writeTo(toSend, 2, toSend.length - 2);
+      
+      Log.i("BluetoothConnection", "Writing " + buffer.length + " bytes");
+
+      os.write(toSend);
+      os.flush();
       
     } catch (IOException e) {
       // TODO Auto-generated catch block

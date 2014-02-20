@@ -8,12 +8,14 @@ import com.squareup.wire.ProtoField;
 
 import static com.squareup.wire.Message.Datatype.ENUM;
 import static com.squareup.wire.Message.Datatype.INT32;
+import static com.squareup.wire.Message.Datatype.STRING;
 import static com.squareup.wire.Message.Label.REQUIRED;
 
 public final class RpcMessage extends Message {
 
   public static final Action DEFAULT_ACTION = Action.FRAMES_PER_SECOND;
   public static final Integer DEFAULT_ARG1 = 0;
+  public static final String DEFAULT_DESCRIPTION = "";
 
   @ProtoField(tag = 1, type = ENUM, label = REQUIRED)
   public final Action action;
@@ -21,10 +23,14 @@ public final class RpcMessage extends Message {
   @ProtoField(tag = 2, type = INT32)
   public final Integer arg1;
 
+  @ProtoField(tag = 3, type = STRING)
+  public final String description;
+
   private RpcMessage(Builder builder) {
     super(builder);
     this.action = builder.action;
     this.arg1 = builder.arg1;
+    this.description = builder.description;
   }
 
   @Override
@@ -33,7 +39,8 @@ public final class RpcMessage extends Message {
     if (!(other instanceof RpcMessage)) return false;
     RpcMessage o = (RpcMessage) other;
     return equals(action, o.action)
-        && equals(arg1, o.arg1);
+        && equals(arg1, o.arg1)
+        && equals(description, o.description);
   }
 
   @Override
@@ -42,6 +49,7 @@ public final class RpcMessage extends Message {
     if (result == 0) {
       result = action != null ? action.hashCode() : 0;
       result = result * 37 + (arg1 != null ? arg1.hashCode() : 0);
+      result = result * 37 + (description != null ? description.hashCode() : 0);
       hashCode = result;
     }
     return result;
@@ -51,6 +59,7 @@ public final class RpcMessage extends Message {
 
     public Action action;
     public Integer arg1;
+    public String description;
 
     public Builder() {
     }
@@ -60,6 +69,7 @@ public final class RpcMessage extends Message {
       if (message == null) return;
       this.action = message.action;
       this.arg1 = message.arg1;
+      this.description = message.description;
     }
 
     public Builder action(Action action) {
@@ -69,6 +79,11 @@ public final class RpcMessage extends Message {
 
     public Builder arg1(Integer arg1) {
       this.arg1 = arg1;
+      return this;
+    }
+
+    public Builder description(String description) {
+      this.description = description;
       return this;
     }
 
@@ -84,5 +99,7 @@ public final class RpcMessage extends Message {
     FRAMES_PER_SECOND,
     @ProtoEnum(1)
     CHANGE_MODE,
+    @ProtoEnum(2)
+    DEBUG,
   }
 }

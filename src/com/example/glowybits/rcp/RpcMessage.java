@@ -100,6 +100,8 @@ public final class RpcMessage extends Message {
     @ProtoEnum(1)
     CHANGE_MODE,
     @ProtoEnum(2)
+    CHANGE_BRIGHTNESS,
+    @ProtoEnum(10)
     DEBUG,
   }
 }

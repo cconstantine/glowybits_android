@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.LinearLayout;
 import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Toast;
 import com.example.glowybits.rcp.RpcMessage;
 import com.example.glowybits.rcp.RpcMessage.Action;
@@ -35,22 +37,6 @@ public class MainActivity extends Activity {
     pairedDevices = mBluetoothAdapter.getBondedDevices();
     Log.i("BluetoothService", "Found " + pairedDevices.size() + " devices.");
 
-    
-    for(final BluetoothDevice device : pairedDevices) {
-      LinearLayout buttonGroup = (LinearLayout) findViewById(R.id.button_group);
-      Button b = new Button(this);
-      b.setText(device.getName());
-      
-      b.setOnClickListener(new OnClickListener() {
-        @Override
-        public void onClick(View arg0) {
-          Log.i("Button", "clicked");
-          connections.get(device.getAddress()).interrupt();
-          connections.put(device.getAddress(), new BluetoothConnection(device, mActions));
-        }
-      });
-      buttonGroup.addView(b);
-    }
     
     mActions = new BluetoothAction() {
       @Override
@@ -84,6 +70,29 @@ public class MainActivity extends Activity {
       }
       
     };
+    
+    SeekBar sb = (SeekBar)this.findViewById(R.id.seek1);
+    sb.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+      @Override
+      public void onProgressChanged(SeekBar arg0, int position, boolean arg2) {
+          Log.i("MainActivity", String.format("Seeking: %d, %s", position, arg2 ? "true" : "false"));
+          changeBrightness(position);
+      }
+
+      @Override
+      public void onStartTrackingTouch(SeekBar arg0) {
+        // TODO Auto-generated method stub
+        
+      }
+
+      @Override
+      public void onStopTrackingTouch(SeekBar arg0) {
+        // TODO Auto-generated method stub
+        
+      }
+      
+    });
 
     reconnect();
   }
@@ -96,10 +105,25 @@ public class MainActivity extends Activity {
     }
   }
   
+  public void reconnect(View v) {
+    reconnect();
+  }
+  
   public void changeMode(View v) {
     for(BluetoothConnection c : connections.values()) {
       RpcMessage msg = new RpcMessage.Builder()
           .action(Action.CHANGE_MODE)
+          .build();
+      c.sendMessage(msg);
+    }
+  }
+  
+  public void changeBrightness(int b) {
+
+    for(BluetoothConnection c : connections.values()) {
+      RpcMessage msg = new RpcMessage.Builder()
+          .action(Action.CHANGE_BRIGHTNESS)
+          .arg1(b)
           .build();
       c.sendMessage(msg);
     }

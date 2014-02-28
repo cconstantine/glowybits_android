@@ -8,16 +8,29 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     android:orientation="vertical"
     tools:context=".MainActivity" >
+    
+    
 
-	
-	<Button
-	    android:id="@+id/reConnect"
-	    android:layout_width="wrap_content"
+	<LinearLayout
+	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
-	    android:text="reconnect"
-        android:onClick="reconnect" >
-	    
-	</Button>
+   		android:orientation="horizontal" >
+		    
+		<Button
+		    android:id="@+id/reConnect"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:text="Disconnect"
+	        android:onClick="onDisconnect" >
+		</Button>
+		<Button
+		    android:id="@+id/reConnect"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:text="Reconnect"
+	        android:onClick="onReconnect" >
+		</Button>
+	</LinearLayout>
 	<Button
 	    android:id="@+id/changeMode"
 	    android:layout_width="wrap_content"
@@ -26,14 +39,67 @@
         android:onClick="changeMode" >
 	    
 	</Button>
+
+	<TextView
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="Brightness">
+	</TextView>
+	<SeekBar
+	    android:id="@+id/brightness"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_margin="10dp"
+	    android:max="1000"
+	    android:progress="1000" />
 	
- 
-    <SeekBar
-        android:id="@+id/seek1"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:progress="255"
-        android:max="255" />
+	<TextView
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="Speed">
+	</TextView>
+	<SeekBar
+	    android:id="@+id/speed"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_margin="10dp"
+	    android:max="1000"
+	    android:progress="1000" />	
+	    
+	<TextView
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="Color Speed">
+	</TextView>
+	<SeekBar
+	    android:id="@+id/color_speed"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_margin="10dp"
+	    android:max="1000"
+	    android:progress="1000" />	
+	        
+	<TextView
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:text="Width">
+	</TextView>
+	<SeekBar
+	    android:id="@+id/width"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_margin="10dp"
+	    android:max="1000"
+	    android:progress="1000" />
+
+	
+	
+	<LinearLayout
+    	android:id="@+id/devices"
+	    android:layout_width="match_parent"
+	    android:orientation="vertical"
+        android:gravity="bottom"
+        android:layout_height="0dip"
+        android:layout_weight="1" />
 
 </LinearLayout>

@@ -7,29 +7,40 @@ import com.squareup.wire.ProtoEnum;
 import com.squareup.wire.ProtoField;
 
 import static com.squareup.wire.Message.Datatype.ENUM;
+import static com.squareup.wire.Message.Datatype.FLOAT;
 import static com.squareup.wire.Message.Datatype.INT32;
 import static com.squareup.wire.Message.Datatype.STRING;
 import static com.squareup.wire.Message.Label.REQUIRED;
 
 public final class RpcMessage extends Message {
 
+  public static final Integer DEFAULT_RID = 0;
   public static final Action DEFAULT_ACTION = Action.FRAMES_PER_SECOND;
   public static final Integer DEFAULT_ARG1 = 0;
+  public static final Float DEFAULT_ARG2 = 0F;
   public static final String DEFAULT_DESCRIPTION = "";
 
-  @ProtoField(tag = 1, type = ENUM, label = REQUIRED)
+  @ProtoField(tag = 1, type = INT32, label = REQUIRED)
+  public final Integer rid;
+
+  @ProtoField(tag = 2, type = ENUM, label = REQUIRED)
   public final Action action;
 
-  @ProtoField(tag = 2, type = INT32)
+  @ProtoField(tag = 3, type = INT32)
   public final Integer arg1;
 
-  @ProtoField(tag = 3, type = STRING)
+  @ProtoField(tag = 5, type = FLOAT)
+  public final Float arg2;
+
+  @ProtoField(tag = 4, type = STRING)
   public final String description;
 
   private RpcMessage(Builder builder) {
     super(builder);
+    this.rid = builder.rid;
     this.action = builder.action;
     this.arg1 = builder.arg1;
+    this.arg2 = builder.arg2;
     this.description = builder.description;
   }
 
@@ -38,8 +49,10 @@ public final class RpcMessage extends Message {
     if (other == this) return true;
     if (!(other instanceof RpcMessage)) return false;
     RpcMessage o = (RpcMessage) other;
-    return equals(action, o.action)
+    return equals(rid, o.rid)
+        && equals(action, o.action)
         && equals(arg1, o.arg1)
+        && equals(arg2, o.arg2)
         && equals(description, o.description);
   }
 
@@ -47,8 +60,10 @@ public final class RpcMessage extends Message {
   public int hashCode() {
     int result = hashCode;
     if (result == 0) {
-      result = action != null ? action.hashCode() : 0;
+      result = rid != null ? rid.hashCode() : 0;
+      result = result * 37 + (action != null ? action.hashCode() : 0);
       result = result * 37 + (arg1 != null ? arg1.hashCode() : 0);
+      result = result * 37 + (arg2 != null ? arg2.hashCode() : 0);
       result = result * 37 + (description != null ? description.hashCode() : 0);
       hashCode = result;
     }
@@ -57,8 +72,10 @@ public final class RpcMessage extends Message {
 
   public static final class Builder extends Message.Builder<RpcMessage> {
 
+    public Integer rid;
     public Action action;
     public Integer arg1;
+    public Float arg2;
     public String description;
 
     public Builder() {
@@ -67,9 +84,16 @@ public final class RpcMessage extends Message {
     public Builder(RpcMessage message) {
       super(message);
       if (message == null) return;
+      this.rid = message.rid;
       this.action = message.action;
       this.arg1 = message.arg1;
+      this.arg2 = message.arg2;
       this.description = message.description;
+    }
+
+    public Builder rid(Integer rid) {
+      this.rid = rid;
+      return this;
     }
 
     public Builder action(Action action) {
@@ -79,6 +103,11 @@ public final class RpcMessage extends Message {
 
     public Builder arg1(Integer arg1) {
       this.arg1 = arg1;
+      return this;
+    }
+
+    public Builder arg2(Float arg2) {
+      this.arg2 = arg2;
       return this;
     }
 
@@ -101,6 +130,12 @@ public final class RpcMessage extends Message {
     CHANGE_MODE,
     @ProtoEnum(2)
     CHANGE_BRIGHTNESS,
+    @ProtoEnum(3)
+    CHANGE_SPEED,
+    @ProtoEnum(4)
+    CHANGE_RAINBOW_SPD,
+    @ProtoEnum(5)
+    CHANGE_WIDTH,
     @ProtoEnum(10)
     DEBUG,
   }

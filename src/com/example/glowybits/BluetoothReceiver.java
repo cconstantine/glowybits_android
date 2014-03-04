@@ -23,7 +23,7 @@ class BluetoothReceiver extends BroadcastReceiver {
       disconnected(addr);
       break;
     case BluetoothConnection.PING:
-      ping(addr, i.getDoubleExtra("ping", 0), i.getIntExtra("fps", 0));
+      ping(addr, i.getDoubleExtra("ping", 0), i.getIntExtra("fps", 0), i.getFloatExtra("g", 0));
       break;
     }
   }
@@ -40,7 +40,7 @@ class BluetoothReceiver extends BroadcastReceiver {
     Log.i("BluetoothReceiver",String.format("%s: disconnected", addr));
   }
   
-  public void ping(String addr, double ping, int fps) {
+  public void ping(String addr, double ping, int fps, float g) {
     Log.i("BluetoothReceiver", String.format("%s: ping time %f (%d)", addr, ping, fps));
 
   }

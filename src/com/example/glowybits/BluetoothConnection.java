@@ -18,6 +18,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
@@ -42,7 +43,7 @@ public class BluetoothConnection {
   private  BluetoothSocket mmSocket;
   private  BluetoothDevice mmDevice;
   private  Handler         mmHandler;
-
+  private  Handler         mmOutputHandler;
   private class AwaitingResponse {
     public AwaitingResponse(Condition t) {
       cond = t;
@@ -61,6 +62,9 @@ public class BluetoothConnection {
     mmDevice = device;
     mmHandler = h;
     responses = Collections.synchronizedMap(new HashMap<Integer, AwaitingResponse>());
+    HandlerThread outputThread = new HandlerThread(device.getAddress() + " output");
+    outputThread.start();
+    mmOutputHandler = new Handler(outputThread.getLooper());
 
     new Thread() {
       @Override
@@ -71,7 +75,7 @@ public class BluetoothConnection {
               long startNano = System.nanoTime();
 
               try {
-                int fps = getFps();
+                RpcMessage rpc = getFps();
                 double delta = (double)(System.nanoTime() - startNano) / 1000000.0;
 
                 Message m = mmHandler.obtainMessage(PING);
@@ -79,7 +83,8 @@ public class BluetoothConnection {
                 Bundle b = new Bundle();
                 b.putString("bt_address", mmDevice.getAddress());
                 b.putDouble("ping", delta);
-                b.putInt("fps", fps);
+                b.putInt("fps", rpc.arg1);
+                b.putFloat("g", rpc.arg2);
                 m.setData(b);
 
                 mmHandler.sendMessage(m);
@@ -90,7 +95,7 @@ public class BluetoothConnection {
               }
             }
 
-            sleep(1000);
+            sleep(100);
           }
 
         } catch (IOException e) {
@@ -107,36 +112,36 @@ public class BluetoothConnection {
     return mmDevice;
   }
 
-  public void connect() {
+  public synchronized void connect() {
     disconnect();
+
+    mBluetoothAdapter.cancelDiscovery();
+
+    Message m = mmHandler.obtainMessage(CONNECTING);
+
+    Bundle b = new Bundle();
+    b.putString("bt_address", mmDevice.getAddress());
+    m.setData(b);
+
+    mmHandler.sendMessage(m);
+    try {
+      mmSocket = mmDevice.createRfcommSocketToServiceRecord(uuid);
+      mmSocket.connect();
+    } catch (IOException e) {
+      disconnect();
+      e.printStackTrace();      
+      return;
+    }
+
+    m = mmHandler.obtainMessage(CONNECTED);
+    b = new Bundle();
+    b.putString("bt_address", mmDevice.getAddress());
+    m.setData(b);
+
+    mmHandler.sendMessage(m);
     new Thread() {
       @Override
       public void run() {
-        mBluetoothAdapter.cancelDiscovery();
-
-        Message m = mmHandler.obtainMessage(CONNECTING);
-
-        Bundle b = new Bundle();
-        b.putString("bt_address", mmDevice.getAddress());
-        m.setData(b);
-
-        mmHandler.sendMessage(m);
-        try {
-          mmSocket = mmDevice.createRfcommSocketToServiceRecord(uuid);
-          mmSocket.connect();
-        } catch (IOException e) {
-          disconnect();
-          e.printStackTrace();      
-          return;
-        }
-
-        m = mmHandler.obtainMessage(CONNECTED);
-        b = new Bundle();
-        b.putString("bt_address", mmDevice.getAddress());
-        m.setData(b);
-
-        mmHandler.sendMessage(m);
-
         try {
           InputStream is = mmSocket.getInputStream();
 
@@ -166,7 +171,6 @@ public class BluetoothConnection {
         } catch (IOException e) { }
       }
     }.start();
-
   }
 
   protected boolean isConnected() {
@@ -174,6 +178,7 @@ public class BluetoothConnection {
   }
 
   private void sendMessage(final RpcMessage outgoing_rpc) throws IOException {
+
     OutputStream os = mmSocket.getOutputStream();
     int serializedSize = outgoing_rpc.getSerializedSize();
 
@@ -187,17 +192,21 @@ public class BluetoothConnection {
     Log.i("BluetoothConnection", String.format("%s: <- %s", mmDevice.getAddress(), outgoing_rpc.toString()));
 
     os.write(toSend);
-    os.flush();      
+    os.flush();    
   }
 
-  private RpcMessage request(final RpcMessage.Builder in_rpc) throws IOException, InterruptedException {
-    RpcMessage req = in_rpc.rid(nextRid()).build();
+  private RpcMessage request(final RpcMessage.Builder in_rpc) throws InterruptedException, IOException {
+    if(!isConnected()) {
+      throw new IOException();
+    }
+    final RpcMessage req = in_rpc.rid(nextRid()).build();
     final int rid = req.rid;
     RpcMessage resp = null;
     Condition cond = lock.newCondition();
     responses.put(rid, new AwaitingResponse(cond));
 
     sendMessage(req);
+
 
     try {
       lock.lock();
@@ -222,7 +231,7 @@ public class BluetoothConnection {
       b.putString("bt_address", mmDevice.getAddress());
       m.setData(b);
       mmHandler.sendMessage(m);
-      
+
       try {
         mmSocket.close();
         mmSocket = null;
@@ -240,9 +249,9 @@ public class BluetoothConnection {
     return rsp.arg1;
   }
 
-  public int getFps() throws IOException, InterruptedException {
+  public RpcMessage getFps() throws IOException, InterruptedException {
     RpcMessage rsp = this.request(new RpcMessage.Builder().action(Action.FRAMES_PER_SECOND));
-    return rsp.arg1;
+    return rsp;
   }
 
   public int changeBrightness(int b) throws IOException, InterruptedException {
@@ -255,7 +264,7 @@ public class BluetoothConnection {
     RpcMessage rsp = this.request(msg);
     return rsp.arg2;  
   }
-  
+
   public float changeColorSpeed(float rate) throws IOException, InterruptedException {
     RpcMessage.Builder msg = new RpcMessage.Builder().action(Action.CHANGE_RAINBOW_SPD).arg2(rate);
     RpcMessage rsp = this.request(msg);

@@ -211,9 +211,14 @@ public class BluetoothService extends Service {
   }
 
   public void connect() {
-    for(BluetoothConnection device : connections.values()) {
-      device.connect();
-    }
+    threads.execute(new Runnable() {
+      @Override
+      public void run() {
+        for(BluetoothConnection device : connections.values()) {
+          device.connect();
+        }
+      }
+    });
   }
 
   public void reconnect() {

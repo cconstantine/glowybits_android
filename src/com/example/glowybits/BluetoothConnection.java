@@ -95,7 +95,7 @@ public class BluetoothConnection {
               }
             }
 
-            sleep(100);
+            sleep(1000);
           }
 
         } catch (IOException e) {
@@ -194,12 +194,22 @@ public class BluetoothConnection {
     os.write(toSend);
     os.flush();    
   }
+  
+  private RpcMessage request(final RpcMessage.Builder in_rpc) throws InterruptedException, IOException  {
+    return request(in_rpc, false);
+  }
 
-  private RpcMessage request(final RpcMessage.Builder in_rpc) throws InterruptedException, IOException {
+  private RpcMessage request(final RpcMessage.Builder in_rpc, boolean has_response) throws InterruptedException, IOException {
     if(!isConnected()) {
       throw new IOException();
     }
     final RpcMessage req = in_rpc.rid(nextRid()).build();
+
+    if (!has_response) {
+      sendMessage(req);
+      return null;
+    }
+    
     final int rid = req.rid;
     RpcMessage resp = null;
     Condition cond = lock.newCondition();
@@ -210,7 +220,7 @@ public class BluetoothConnection {
 
     try {
       lock.lock();
-      if (!cond.await(1, TimeUnit.SECONDS)) {
+      if (!cond.await(2, TimeUnit.SECONDS)) {
         throw new InterruptedException();
       }
     } finally {
@@ -244,37 +254,32 @@ public class BluetoothConnection {
     }
   }
 
-  public int changeMode() throws IOException, InterruptedException {
-    RpcMessage rsp = this.request(new RpcMessage.Builder().action(Action.CHANGE_MODE));
-    return rsp.arg1;
+  public void changeMode() throws IOException, InterruptedException {
+    this.request(new RpcMessage.Builder().action(Action.CHANGE_MODE));
   }
 
   public RpcMessage getFps() throws IOException, InterruptedException {
-    RpcMessage rsp = this.request(new RpcMessage.Builder().action(Action.FRAMES_PER_SECOND));
+    RpcMessage rsp = this.request(new RpcMessage.Builder().action(Action.FRAMES_PER_SECOND), true);
     return rsp;
   }
 
-  public int changeBrightness(int b) throws IOException, InterruptedException {
-    RpcMessage rsp = this.request(new RpcMessage.Builder().action(Action.CHANGE_BRIGHTNESS).arg1(b));
-    return rsp.arg1;
+  public void changeBrightness(int b) throws IOException, InterruptedException {
+    this.request(new RpcMessage.Builder().action(Action.CHANGE_BRIGHTNESS).arg1(b));
   }
 
-  public float changeSpeed(float rate) throws IOException, InterruptedException {
+  public void changeSpeed(float rate) throws IOException, InterruptedException {
     RpcMessage.Builder msg = new RpcMessage.Builder().action(Action.CHANGE_SPEED).arg2(rate);
-    RpcMessage rsp = this.request(msg);
-    return rsp.arg2;  
+    this.request(msg);
   }
 
-  public float changeColorSpeed(float rate) throws IOException, InterruptedException {
+  public void changeColorSpeed(float rate) throws IOException, InterruptedException {
     RpcMessage.Builder msg = new RpcMessage.Builder().action(Action.CHANGE_RAINBOW_SPD).arg2(rate);
-    RpcMessage rsp = this.request(msg);
-    return rsp.arg2;  
+    this.request(msg);
   }
 
-  public float changeWidth(float width) throws IOException, InterruptedException {
+  public void changeWidth(float width) throws IOException, InterruptedException {
     RpcMessage.Builder msg = new RpcMessage.Builder().action(Action.CHANGE_WIDTH).arg2(width);
-    RpcMessage rsp = this.request(msg);
-    return rsp.arg2;  
+    this.request(msg);
   }
 
 

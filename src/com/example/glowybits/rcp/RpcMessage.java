@@ -3,45 +3,20 @@
 package com.example.glowybits.rcp;
 
 import com.squareup.wire.Message;
-import com.squareup.wire.ProtoEnum;
 import com.squareup.wire.ProtoField;
-
-import static com.squareup.wire.Message.Datatype.ENUM;
-import static com.squareup.wire.Message.Datatype.FLOAT;
-import static com.squareup.wire.Message.Datatype.INT32;
-import static com.squareup.wire.Message.Datatype.STRING;
-import static com.squareup.wire.Message.Label.REQUIRED;
 
 public final class RpcMessage extends Message {
 
-  public static final Integer DEFAULT_RID = 0;
-  public static final Action DEFAULT_ACTION = Action.FRAMES_PER_SECOND;
-  public static final Integer DEFAULT_ARG1 = 0;
-  public static final Float DEFAULT_ARG2 = 0F;
-  public static final String DEFAULT_DESCRIPTION = "";
+  @ProtoField(tag = 1)
+  public final ChangeSettings settings;
 
-  @ProtoField(tag = 1, type = INT32, label = REQUIRED)
-  public final Integer rid;
-
-  @ProtoField(tag = 2, type = ENUM, label = REQUIRED)
-  public final Action action;
-
-  @ProtoField(tag = 3, type = INT32)
-  public final Integer arg1;
-
-  @ProtoField(tag = 5, type = FLOAT)
-  public final Float arg2;
-
-  @ProtoField(tag = 4, type = STRING)
-  public final String description;
+  @ProtoField(tag = 2)
+  public final Status status;
 
   private RpcMessage(Builder builder) {
     super(builder);
-    this.rid = builder.rid;
-    this.action = builder.action;
-    this.arg1 = builder.arg1;
-    this.arg2 = builder.arg2;
-    this.description = builder.description;
+    this.settings = builder.settings;
+    this.status = builder.status;
   }
 
   @Override
@@ -49,22 +24,16 @@ public final class RpcMessage extends Message {
     if (other == this) return true;
     if (!(other instanceof RpcMessage)) return false;
     RpcMessage o = (RpcMessage) other;
-    return equals(rid, o.rid)
-        && equals(action, o.action)
-        && equals(arg1, o.arg1)
-        && equals(arg2, o.arg2)
-        && equals(description, o.description);
+    return equals(settings, o.settings)
+        && equals(status, o.status);
   }
 
   @Override
   public int hashCode() {
     int result = hashCode;
     if (result == 0) {
-      result = rid != null ? rid.hashCode() : 0;
-      result = result * 37 + (action != null ? action.hashCode() : 0);
-      result = result * 37 + (arg1 != null ? arg1.hashCode() : 0);
-      result = result * 37 + (arg2 != null ? arg2.hashCode() : 0);
-      result = result * 37 + (description != null ? description.hashCode() : 0);
+      result = settings != null ? settings.hashCode() : 0;
+      result = result * 37 + (status != null ? status.hashCode() : 0);
       hashCode = result;
     }
     return result;
@@ -72,11 +41,8 @@ public final class RpcMessage extends Message {
 
   public static final class Builder extends Message.Builder<RpcMessage> {
 
-    public Integer rid;
-    public Action action;
-    public Integer arg1;
-    public Float arg2;
-    public String description;
+    public ChangeSettings settings;
+    public Status status;
 
     public Builder() {
     }
@@ -84,59 +50,23 @@ public final class RpcMessage extends Message {
     public Builder(RpcMessage message) {
       super(message);
       if (message == null) return;
-      this.rid = message.rid;
-      this.action = message.action;
-      this.arg1 = message.arg1;
-      this.arg2 = message.arg2;
-      this.description = message.description;
+      this.settings = message.settings;
+      this.status = message.status;
     }
 
-    public Builder rid(Integer rid) {
-      this.rid = rid;
+    public Builder settings(ChangeSettings settings) {
+      this.settings = settings;
       return this;
     }
 
-    public Builder action(Action action) {
-      this.action = action;
-      return this;
-    }
-
-    public Builder arg1(Integer arg1) {
-      this.arg1 = arg1;
-      return this;
-    }
-
-    public Builder arg2(Float arg2) {
-      this.arg2 = arg2;
-      return this;
-    }
-
-    public Builder description(String description) {
-      this.description = description;
+    public Builder status(Status status) {
+      this.status = status;
       return this;
     }
 
     @Override
     public RpcMessage build() {
-      checkRequiredFields();
       return new RpcMessage(this);
     }
-  }
-
-  public enum Action {
-    @ProtoEnum(0)
-    FRAMES_PER_SECOND,
-    @ProtoEnum(1)
-    CHANGE_MODE,
-    @ProtoEnum(2)
-    CHANGE_BRIGHTNESS,
-    @ProtoEnum(3)
-    CHANGE_SPEED,
-    @ProtoEnum(4)
-    CHANGE_RAINBOW_SPD,
-    @ProtoEnum(5)
-    CHANGE_WIDTH,
-    @ProtoEnum(10)
-    DEBUG,
   }
 }

@@ -10,14 +10,22 @@
     tools:context=".MainActivity" >
     
    
-	<Button
-	    android:id="@+id/changeMode"
-	    android:layout_width="wrap_content"
+    <RadioGroup
+	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
-	    android:text="Change Mode"
-        android:onClick="changeMode" >
-	    
-	</Button>
+	    android:orientation="horizontal">
+	    <RadioButton android:id="@+id/radio_diamonds"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Diamonds"
+	        android:onClick="setChaseMode"/>
+	    <RadioButton android:id="@+id/radio_stars"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Stars"
+	        android:onClick="setStarsMode"/>
+	</RadioGroup>
+
 
 	<TextView
 	    android:layout_width="wrap_content"

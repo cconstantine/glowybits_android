@@ -1,37 +1,98 @@
 package com.example.glowybits;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import com.example.glowybits.rcp.ChangeSettings;
+import com.example.glowybits.rcp.ChangeSettings.Mode;
+import com.example.glowybits.rcp.RpcMessage;
 
 import android.os.Bundle;
-import android.os.IBinder;
+import android.os.ParcelUuid;
 import android.app.Activity;
-import android.content.ComponentName;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
-  public BluetoothServiceConnection mConnection;
-  private BluetoothReceiver mBluetoothReceiver;
   private Map<String, TextView> statusViews = new HashMap<String, TextView>();
   private OnSeekBarChangeListener brightnessListener;
   private OnSeekBarChangeListener speedListener;
   private OnSeekBarChangeListener widthListener;
   private OnSeekBarChangeListener colorSpeedListener;
+  private PoiSync poi_sync;
+  
+  private class PoiSync extends Thread {
+    Set<BluetoothConnection> connections = new HashSet<BluetoothConnection>();
+    private BluetoothAdapter mBluetoothAdapter;
+    private MainActivity mmMainActivity;
+    public boolean running = true;
+    
+    public PoiSync(MainActivity ma) {
+      mmMainActivity = ma;
+      mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+      
+      for(BluetoothDevice bd : mBluetoothAdapter.getBondedDevices()) {
+        connections.add(new BluetoothConnection(bd));
+      }
+         
+    }
+    @Override
+    public void run() {
+      while(running) {
+        double pos = (double)mmMainActivity.getBrightnessControl().getProgress() / 1000;
+        int brightness = (int) (Math.pow(pos, 2)*255);
+        float speed = (float)(mmMainActivity.getSpeedControl().getProgress()) / 1000;
+        float rainbow_speed = (float)(mmMainActivity.getColorSpeedControl().getProgress()) / 1000;
+        float width = (float)(mmMainActivity.getWidthControl().getProgress()) / 1000;
+        
+        
+        RpcMessage.Builder msg = new RpcMessage.Builder().settings(
+            new ChangeSettings.Builder()
+              .mode(getMode())
+              .brightness(brightness)
+              .speed(speed)
+              .rainbow_speed(rainbow_speed)
+              .width(width)
+              .build()
+            ); 
+
+        try {
+          for(BluetoothConnection bc : connections) {
+            try {
+              bc.request(msg);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            } catch (IOException e) {
+              e.printStackTrace();
+              sleep(5000);
+            }
+          }
+        
+          sleep(1000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+      Log.i("MainActivity", "Stopping sync thread");
+    }
+  };
 
   @Override
   public void onStart() {
@@ -43,27 +104,19 @@ public class MainActivity extends Activity {
   protected void onCreate(Bundle savedInstanceState) {
     Log.i("MainActivity", "MainActivity::onCreate()");
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
-
-    mConnection = new BluetoothServiceConnection();
-
-    Intent intent = new Intent(this, BluetoothService.class);
-    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);    
+    setContentView(R.layout.activity_main);  
 
     Log.i("MainActivity", String.format("Thread: %d", Thread.currentThread().getId()));
 
     final SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
     final SharedPreferences.Editor editor = sharedPref.edit();
 
+    
     brightnessListener = new OnSeekBarChangeListener() {
       @Override
       public void onProgressChanged(SeekBar arg0, int position, boolean arg2) {
         editor.putInt("brightness", position);
         editor.apply();
-
-        double pos = (double)position / 1000;
-        pos = Math.pow(pos, 2);
-        changeBrightness((int) (pos * 255));
       }
       @Override
       public void onStartTrackingTouch(SeekBar arg0) { }
@@ -76,9 +129,6 @@ public class MainActivity extends Activity {
       public void onProgressChanged(SeekBar arg0, int position, boolean arg2) {
         editor.putInt("speed", position);
         editor.apply();
-
-        double pos = (double)position / 1000;
-        MainActivity.this.changeSpeed((float) pos);
       }
       @Override
       public void onStartTrackingTouch(SeekBar arg0) { }
@@ -92,9 +142,6 @@ public class MainActivity extends Activity {
 
         editor.putInt("color_speed", position);
         editor.apply();
-
-        double pos = (double)position / 1000;
-        MainActivity.this.changeColorSpeed((float) pos);
       }
       @Override
       public void onStartTrackingTouch(SeekBar arg0) { }
@@ -107,8 +154,6 @@ public class MainActivity extends Activity {
       public void onProgressChanged(SeekBar arg0, int position, boolean arg2) {
         editor.putInt("width", position);
         editor.apply();
-        double pos = (double)position / 1000;
-        MainActivity.this.changeWidth((float) pos);
       }
       @Override
       public void onStartTrackingTouch(SeekBar arg0) { }
@@ -116,41 +161,25 @@ public class MainActivity extends Activity {
       public void onStopTrackingTouch(SeekBar arg0) { }  
     };
 
-
-    mBluetoothReceiver = new BluetoothReceiver() {
-
-      @Override
-      public void connecting(String addr) {
-        super.connecting(addr);
-
-        addDevice(addr);
-        updateDevice(addr, addr + " - ");
-      }
-
-      @Override
-      public void connected(String addr) {
-        super.connected(addr);
-        sendDefaults();
-        updateDevice(addr, addr + " + ");
-      }
-
-      @Override
-      public void disconnected(String addr) {
-        super.disconnected(addr);
-        removeDevice(addr);
-        mConnection.getService().connect();
-      }
-
-      @Override
-      public void ping(String addr, double ping, int fps, float g_load) {
-        updateDevice(addr, String.format("%s (%3.2fms, % 3dfps, %3fg)", addr, ping, fps, g_load));
-      }
-    };
-    LocalBroadcastManager.getInstance(this).registerReceiver(mBluetoothReceiver, new IntentFilter("message"));
-
     populateStatusViews();
+
+    poi_sync = new PoiSync(this);
+    poi_sync.start();
   }
 
+  public void setChaseMode(View v) {
+    final SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
+
+    editor.putInt("mode", ChangeSettings.Mode.CHASE.ordinal());
+    editor.apply();
+  }
+  
+  public void setStarsMode(View v) {
+    final SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
+
+    editor.putInt("mode", ChangeSettings.Mode.STARS.ordinal());
+    editor.apply();
+  }
 
   protected void addDevice(String addr) {
     LinearLayout devices_view = (LinearLayout)findViewById(R.id.devices);
@@ -168,17 +197,6 @@ public class MainActivity extends Activity {
     statusViews.put(addr, v);
   }
 
-  protected void updateDevice(String addr, String text) {
-    statusViews.get(addr).setText(text);
-  }
-
-  public void removeDevice(String addr) {
-    LinearLayout devices_view = (LinearLayout)findViewById(R.id.devices);
-    View v = statusViews.remove(addr);
-    devices_view.removeView(v);
-    addDevice(addr);
-  }
-
   SeekBar getBrightnessControl() {
     return (SeekBar)this.findViewById(R.id.brightness);
   }
@@ -194,6 +212,18 @@ public class MainActivity extends Activity {
   SeekBar getWidthControl() {
     return (SeekBar)this.findViewById(R.id.width);
   }
+  
+  Mode getMode() {
+    RadioButton radio = (RadioButton)this.findViewById(R.id.radio_diamonds);
+    if (radio.isChecked())
+      return ChangeSettings.Mode.CHASE;
+    
+    radio = (RadioButton)this.findViewById(R.id.radio_stars);
+    if (radio.isChecked())
+      return ChangeSettings.Mode.STARS;
+    
+    return ChangeSettings.DEFAULT_MODE;
+  }
 
   protected void restoreDefaults() {
     final SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
@@ -201,6 +231,22 @@ public class MainActivity extends Activity {
     getSpeedControl().setProgress(sharedPref.getInt("speed", 500));
     getColorSpeedControl().setProgress(sharedPref.getInt("color_speed", 500));
     getWidthControl().setProgress(sharedPref.getInt("width", 500));
+
+    RadioButton b;
+    int mode = sharedPref.getInt("mode", ChangeSettings.DEFAULT_MODE.ordinal());
+    if (mode == ChangeSettings.Mode.STARS.ordinal()) {
+      b = (RadioButton)(this.findViewById(R.id.radio_diamonds));
+      b.setChecked(false);
+      
+      b = (RadioButton)(this.findViewById(R.id.radio_stars));
+      b.setChecked(true);
+    } else {
+      b = (RadioButton)(this.findViewById(R.id.radio_diamonds));
+      b.setChecked(true);
+      
+      b = (RadioButton)(this.findViewById(R.id.radio_stars));
+      b.setChecked(false);
+    }
   }
 
   protected void sendDefaults() {
@@ -217,47 +263,8 @@ public class MainActivity extends Activity {
     getBrightnessControl().setOnSeekBarChangeListener(brightnessListener);
     getSpeedControl(     ).setOnSeekBarChangeListener(speedListener);
     getColorSpeedControl().setOnSeekBarChangeListener(colorSpeedListener);
-    getWidthControl(     ).setOnSeekBarChangeListener(widthListener);
-
-
-    LinearLayout devices_view = (LinearLayout)findViewById(R.id.devices);
-    devices_view.removeAllViews();
-    if(mConnection.getService() != null) {
-      for(BluetoothConnection bc : mConnection.getService().getConnections().values()) {
-        addDevice(bc.getDevice().getAddress());
-      }
-    }
+    getWidthControl(     ).setOnSeekBarChangeListener(widthListener);    
   }
-
-  public void changeMode(View v) {
-    mConnection.getService().changeMode();
-  }
-
-  public void changeBrightness(int b) {
-    mConnection.getService().changeBrightness(b);
-  }
-
-  public void changeSpeed(float rate) {
-    mConnection.getService().changeSpeed(rate);
-  }
-
-  protected void changeColorSpeed(float rate) {
-    mConnection.getService().changeColorSpeed(rate);
-  }
-
-  protected void changeWidth(float width) {
-    mConnection.getService().changeWidth(width);    
-  }
-
-
-  public synchronized void onReconnect(View v) {
-    mConnection.getService().reconnect();
-  }
-
-  public synchronized void onDisconnect(View v) {
-    mConnection.getService().disconnect();
-  }
-
 
   @Override
   protected void onResume() {
@@ -266,13 +273,14 @@ public class MainActivity extends Activity {
 
   @Override
   protected void onDestroy() {
-    super.onDestroy();
-    LocalBroadcastManager.getInstance(this).unregisterReceiver(mBluetoothReceiver);
-
-    // Unbind from the service
-    if (mConnection.isBound()) {
-      unbindService(mConnection);
+    poi_sync.running = false;
+    poi_sync.interrupt();
+    try {
+      poi_sync.join(1000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
+    super.onDestroy();
   }
 
 
@@ -280,7 +288,7 @@ public class MainActivity extends Activity {
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.
-    getMenuInflater().inflate(R.menu.main, menu);
+    //getMenuInflater().inflate(R.menu.main, menu);
     return true;
   }
 
@@ -289,18 +297,6 @@ public class MainActivity extends Activity {
     super.onConfigurationChanged(newConfig);
     setContentView(R.layout.activity_main);
     populateStatusViews();
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    // Handle item selection
-    switch (item.getItemId()) {
-    case R.id.action_reconnect:
-      onDisconnect(null);
-      return true;
-    default:
-      return super.onOptionsItemSelected(item);
-    }
   }
 
 }

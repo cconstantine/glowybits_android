@@ -18,12 +18,22 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text="Diamonds"
-	        android:onClick="setChaseMode"/>
+	        android:onClick="setMode"/>
 	    <RadioButton android:id="@+id/radio_stars"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text="Stars"
-	        android:onClick="setStarsMode"/>
+	        android:onClick="setMode"/>
+	    <RadioButton android:id="@+id/radio_lines"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Lines"
+	        android:onClick="setMode"/>
+	    <RadioButton android:id="@+id/radio_spiral"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Spiral"
+	        android:onClick="setMode"/>
 	</RadioGroup>
 
 

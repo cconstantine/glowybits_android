@@ -1,21 +1,13 @@
 package com.example.glowybits;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 import com.example.glowybits.rcp.ChangeSettings;
 import com.example.glowybits.rcp.ChangeSettings.Mode;
-import com.example.glowybits.rcp.RpcMessage;
 
 import android.os.Bundle;
-import android.os.ParcelUuid;
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -28,7 +20,6 @@ import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class MainActivity extends Activity {
   private Map<String, TextView> statusViews = new HashMap<String, TextView>();
@@ -38,62 +29,6 @@ public class MainActivity extends Activity {
   private OnSeekBarChangeListener colorSpeedListener;
   private PoiSync poi_sync;
   
-  private class PoiSync extends Thread {
-    Set<BluetoothConnection> connections = new HashSet<BluetoothConnection>();
-    private BluetoothAdapter mBluetoothAdapter;
-    private MainActivity mmMainActivity;
-    public boolean running = true;
-    
-    public PoiSync(MainActivity ma) {
-      mmMainActivity = ma;
-      mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-      
-      for(BluetoothDevice bd : mBluetoothAdapter.getBondedDevices()) {
-        connections.add(new BluetoothConnection(bd));
-      }
-         
-    }
-    @Override
-    public void run() {
-      while(running) {
-        double pos = (double)mmMainActivity.getBrightnessControl().getProgress() / 1000;
-        int brightness = (int) (Math.pow(pos, 2)*255);
-        float speed = (float)(mmMainActivity.getSpeedControl().getProgress()) / 1000;
-        float rainbow_speed = (float)(mmMainActivity.getColorSpeedControl().getProgress()) / 1000;
-        float width = (float)(mmMainActivity.getWidthControl().getProgress()) / 1000;
-        
-        
-        RpcMessage.Builder msg = new RpcMessage.Builder().settings(
-            new ChangeSettings.Builder()
-              .mode(getMode())
-              .brightness(brightness)
-              .speed(speed)
-              .rainbow_speed(rainbow_speed)
-              .width(width)
-              .build()
-            ); 
-
-        try {
-          for(BluetoothConnection bc : connections) {
-            try {
-              bc.request(msg);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            } catch (IOException e) {
-              e.printStackTrace();
-              sleep(5000);
-            }
-          }
-        
-          sleep(1000);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
-      }
-      Log.i("MainActivity", "Stopping sync thread");
-    }
-  };
-
   @Override
   public void onStart() {
     super.onStart();
@@ -167,20 +102,13 @@ public class MainActivity extends Activity {
     poi_sync.start();
   }
 
-  public void setChaseMode(View v) {
+  public void setMode(View v) {
     final SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
 
-    editor.putInt("mode", ChangeSettings.Mode.CHASE.ordinal());
+    editor.putInt("mode", getMode().ordinal());
     editor.apply();
   }
   
-  public void setStarsMode(View v) {
-    final SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
-
-    editor.putInt("mode", ChangeSettings.Mode.STARS.ordinal());
-    editor.apply();
-  }
-
   protected void addDevice(String addr) {
     LinearLayout devices_view = (LinearLayout)findViewById(R.id.devices);
     TextView v = statusViews.get(addr);
@@ -221,6 +149,14 @@ public class MainActivity extends Activity {
     radio = (RadioButton)this.findViewById(R.id.radio_stars);
     if (radio.isChecked())
       return ChangeSettings.Mode.STARS;
+
+    radio = (RadioButton)this.findViewById(R.id.radio_lines);
+    if (radio.isChecked())
+      return ChangeSettings.Mode.LINES;
+    
+    radio = (RadioButton)this.findViewById(R.id.radio_spiral);
+    if (radio.isChecked())
+      return ChangeSettings.Mode.SPIRAL;
     
     return ChangeSettings.DEFAULT_MODE;
   }
@@ -232,21 +168,20 @@ public class MainActivity extends Activity {
     getColorSpeedControl().setProgress(sharedPref.getInt("color_speed", 500));
     getWidthControl().setProgress(sharedPref.getInt("width", 500));
 
-    RadioButton b;
+    RadioButton b = (RadioButton)(this.findViewById(R.id.radio_diamonds));
     int mode = sharedPref.getInt("mode", ChangeSettings.DEFAULT_MODE.ordinal());
-    if (mode == ChangeSettings.Mode.STARS.ordinal()) {
-      b = (RadioButton)(this.findViewById(R.id.radio_diamonds));
-      b.setChecked(false);
-      
+
+    if(mode == ChangeSettings.Mode.STARS.ordinal())
       b = (RadioButton)(this.findViewById(R.id.radio_stars));
-      b.setChecked(true);
-    } else {
+    else if (mode == ChangeSettings.Mode.CHASE.ordinal())
       b = (RadioButton)(this.findViewById(R.id.radio_diamonds));
-      b.setChecked(true);
-      
-      b = (RadioButton)(this.findViewById(R.id.radio_stars));
-      b.setChecked(false);
-    }
+    else if (mode == ChangeSettings.Mode.LINES.ordinal())
+      b = (RadioButton)(this.findViewById(R.id.radio_lines));
+    else if (mode == ChangeSettings.Mode.SPIRAL.ordinal())
+      b = (RadioButton)(this.findViewById(R.id.radio_spiral));
+    
+    b.setChecked(true);
+    
   }
 
   protected void sendDefaults() {

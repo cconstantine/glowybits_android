@@ -126,10 +126,8 @@ public final class ChangeSettings extends Message {
     @ProtoEnum(0)
     CHASE,
     @ProtoEnum(1)
-    STARS,
-    @ProtoEnum(2)
     LINES,
-    @ProtoEnum(3)
+    @ProtoEnum(2)
     SPIRAL,
   }
 }

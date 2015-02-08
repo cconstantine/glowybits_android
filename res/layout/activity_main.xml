@@ -2,101 +2,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:orientation="vertical"
     tools:context=".MainActivity" >
     
-   
-    <RadioGroup
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:orientation="horizontal">
-	    <RadioButton android:id="@+id/radio_diamonds"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="Diamonds"
-	        android:onClick="setMode"/>
-	    <RadioButton android:id="@+id/radio_stars"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="Stars"
-	        android:onClick="setMode"/>
-	    <RadioButton android:id="@+id/radio_lines"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="Lines"
-	        android:onClick="setMode"/>
-	    <RadioButton android:id="@+id/radio_spiral"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="Spiral"
-	        android:onClick="setMode"/>
-	</RadioGroup>
-
-
-	<TextView
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:text="Brightness">
-	</TextView>
-	<SeekBar
-	    android:id="@+id/brightness"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:layout_margin="10dp"
-	    android:max="1000"
-	    android:progress="1000" />
-	
-	<TextView
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:text="Speed">
-	</TextView>
-	<SeekBar
-	    android:id="@+id/speed"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:layout_margin="10dp"
-	    android:max="1000"
-	    android:progress="1000" />	
-	    
-	<TextView
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:text="Color Speed">
-	</TextView>
-	<SeekBar
-	    android:id="@+id/color_speed"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:layout_margin="10dp"
-	    android:max="1000"
-	    android:progress="1000" />	
-	        
-	<TextView
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:text="Width">
-	</TextView>
-	<SeekBar
-	    android:id="@+id/width"
-	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
-	    android:layout_margin="10dp"
-	    android:max="1000"
-	    android:progress="1000" />
-
-	
-	
-	<LinearLayout
-    	android:id="@+id/devices"
-	    android:layout_width="match_parent"
-	    android:orientation="vertical"
-        android:gravity="bottom"
-        android:layout_height="0dip"
-        android:layout_weight="1" />
-
+    <fragment android:name="com.example.glowybits.MainSettingsActivity"
+            android:id="@+id/main_settings"
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    
 </LinearLayout>

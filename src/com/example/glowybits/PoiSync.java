@@ -6,7 +6,6 @@ import java.util.Set;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.util.Log;
 
 import com.example.glowybits.rcp.ChangeSettings;
@@ -18,7 +17,7 @@ class PoiSync extends Thread {
   private BluetoothAdapter mBluetoothAdapter;
   public boolean running = true;
 
-  public PoiSync(Context ma) {
+  public PoiSync() {
     mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     
     for(BluetoothDevice bd : mBluetoothAdapter.getBondedDevices()) {
@@ -46,11 +45,25 @@ class PoiSync extends Thread {
   private Float _width;
   private Float getWidth()        { return _width; }
   public  void  setWidth(Float w) { _width = w; }
+
+  private int  _color1;
+  private int  getColor1()        { return _color1; }
+  public  void setColor1(int c) { _color1 = c; }
+  
+  private int  _color2;
+  private int  getColor2()        { return _color2; }
+  public  void setColor2(int c) { _color2 = c; }
+
+  private int   _color3;
+  private int  getColor3()        { return _color3; }
+  public  void setColor3(int c) { _color3 = c; }
   
   @Override
   public void run() {
     Log.i("PoiSync", "PoiSync::run()");
     while(running) {
+      Log.i("PoiSyncService", String.format("PoiSyncService::color1: %x", getColor1()));
+
       RpcMessage.Builder msg = new RpcMessage.Builder().settings(
           new ChangeSettings.Builder()
             .mode(getMode())
@@ -58,6 +71,9 @@ class PoiSync extends Thread {
             .speed(getSpeed())
             .rainbow_speed(getRainbowSpeed())
             .width(getWidth())
+            .color1(getColor1())
+            .color2(getColor2())
+            .color3(getColor3())
             .build()
           ); 
 

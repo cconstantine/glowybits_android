@@ -18,8 +18,8 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <!-- 
-        <service android:name=".BluetoothService" /> -->
+
+        <service android:name=".PoiSyncService" />
         
         <activity
             android:name="com.example.glowybits.MainActivity"

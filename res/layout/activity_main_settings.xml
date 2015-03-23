@@ -22,11 +22,11 @@
             android:text="Diamonds" />
 
         <RadioButton
-            android:id="@+id/radio_lines"
+            android:id="@+id/radio_stars"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="setMode"
-            android:text="Lines" />
+            android:text="Stars" />
 
         <RadioButton
             android:id="@+id/radio_spiral"
@@ -34,6 +34,13 @@
             android:layout_height="wrap_content"
             android:onClick="setMode"
             android:text="Spiral" />
+        
+        <RadioButton
+            android:id="@+id/radio_joint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="setMode"
+            android:text="Joint" />
     </RadioGroup>
 
     <TextView

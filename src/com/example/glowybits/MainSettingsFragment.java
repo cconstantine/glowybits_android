@@ -44,11 +44,15 @@ public class MainSettingsFragment extends Fragment {
     RadioButton radio = (RadioButton)rootView.findViewById(R.id.radio_diamonds);
     radio.setOnClickListener(ocl);
 
-    radio = (RadioButton)rootView.findViewById(R.id.radio_lines);
+    radio = (RadioButton)rootView.findViewById(R.id.radio_stars);
     radio.setOnClickListener(ocl);
 
     radio = (RadioButton)rootView.findViewById(R.id.radio_spiral);
     radio.setOnClickListener(ocl);
+    
+    radio = (RadioButton)rootView.findViewById(R.id.radio_joint);
+    radio.setOnClickListener(ocl);
+    
     
     getBrightnessControl().setOnSeekBarChangeListener(new ProgressChanger() {
       @Override
@@ -109,13 +113,17 @@ public class MainSettingsFragment extends Fragment {
     if (radio.isChecked())
       return ChangeSettings.Mode.CHASE;
 
-    radio = (RadioButton)rootView.findViewById(R.id.radio_lines);
+    radio = (RadioButton)rootView.findViewById(R.id.radio_stars);
     if (radio.isChecked())
-      return ChangeSettings.Mode.LINES;
+      return ChangeSettings.Mode.STARS;
     
     radio = (RadioButton)rootView.findViewById(R.id.radio_spiral);
     if (radio.isChecked())
       return ChangeSettings.Mode.SPIRAL;
+    
+    radio = (RadioButton)rootView.findViewById(R.id.radio_joint);
+    if (radio.isChecked())
+      return ChangeSettings.Mode.JOINT;
     
     return ChangeSettings.DEFAULT_MODE;
   }
@@ -133,10 +141,12 @@ public class MainSettingsFragment extends Fragment {
 
     if (mode == ChangeSettings.Mode.CHASE.ordinal())
       b = (RadioButton)(rootView.findViewById(R.id.radio_diamonds));
-    else if (mode == ChangeSettings.Mode.LINES.ordinal())
-      b = (RadioButton)(rootView.findViewById(R.id.radio_lines));
+    else if (mode == ChangeSettings.Mode.STARS.ordinal())
+      b = (RadioButton)(rootView.findViewById(R.id.radio_stars));
     else if (mode == ChangeSettings.Mode.SPIRAL.ordinal())
       b = (RadioButton)(rootView.findViewById(R.id.radio_spiral));
+    else if (mode == ChangeSettings.Mode.JOINT.ordinal())
+      b = (RadioButton)(rootView.findViewById(R.id.radio_joint));
     
     b.setChecked(true);
     setMode(b);

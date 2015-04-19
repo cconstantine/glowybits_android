@@ -60,6 +60,7 @@ class PoiSync extends Thread {
   
   @Override
   public void run() {
+    BluetoothConnection lastUsed = null;
     Log.i("PoiSync", "PoiSync::run()");
     while(running) {
       Log.i("PoiSyncService", String.format("PoiSyncService::color1: %x", getColor1()));
@@ -78,14 +79,15 @@ class PoiSync extends Thread {
           ); 
 
       try {
-        for(BluetoothConnection bc : connections) {
-          try {
-            bc.request(msg);
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          } catch (IOException e) {
-            e.printStackTrace();
-            sleep(5000);
+        if (lastUsed != null) {
+          lastUsed.request(msg);
+          } else {
+          for(BluetoothConnection bc : connections) {
+            if (bc.request(msg)) {
+              lastUsed = bc;
+              continue;
+            }
+            sleep(1000);
           }
         }
       

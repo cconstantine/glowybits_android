@@ -19,30 +19,89 @@ public class BluetoothConnection {
 
   final private Wire wire = new Wire();
   final private BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-  private  BluetoothDevice mmDevice;
+  private boolean is_connected = false;
+  private BluetoothSocket mmSocket;
+  
+  private BluetoothDevice mmDevice;
+  private long lastMillis;
+  private Thread listener;
 
   @SuppressLint("UseSparseArrays")
-  public BluetoothConnection(BluetoothDevice device) {
+  public BluetoothConnection(BluetoothDevice device)  {
     mmDevice = device;
+    lastMillis = System.currentTimeMillis();
+
+  }
+  
+  public void connect() throws InterruptedException, IOException {
+    if (is_connected) {
+      return;
+    }
+    Log.i("BluetoothConnection", String.format("%s: Connecting", mmDevice.getAddress()));
+
+    mBluetoothAdapter.cancelDiscovery();
+    mmSocket = mmDevice.createRfcommSocketToServiceRecord(uuid);
+    mmSocket.connect();
+    is_connected = true;
+    
+    listener = new Thread() {
+      public void run() {
+        try {
+          InputStream is = mmSocket.getInputStream();
+          while(is_connected) {
+  
+            int bytes = is.read() << 8;
+            bytes += is.read();
+        
+            byte buffer[] = new byte[bytes];
+            for(int offset = 0;offset < bytes;) {
+              offset += is.read(buffer, offset, bytes - offset);
+            }
+            long now = System.currentTimeMillis();
+
+            RpcMessage resp = wire.parseFrom(buffer,  RpcMessage.class);
+            Log.i("BluetoothConnection", String.format("%s: -> (%dms) %s", mmDevice.getAddress(), now - lastMillis, resp.toString()));
+          }
+        } catch (IOException ioe) {
+          ioe.printStackTrace();
+          disconnect();
+        }
+      }
+    };
+    listener.start();
+  }
+  
+  public void disconnect() {
+    if(!is_connected) {
+      return;
+    }
+
+    Log.i("BluetoothConnection", String.format("%s: Disconnecting", mmDevice.getAddress()));
+    is_connected = false;
+    try {
+      listener.join();
+    } catch (InterruptedException e1) {
+      e1.printStackTrace();
+    }
+    
+    try {
+      mmSocket.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public BluetoothDevice getDevice() {
     return mmDevice;
   }
 
-  public RpcMessage request(final RpcMessage.Builder in_rpc) throws InterruptedException, IOException {
+  public boolean request(final RpcMessage.Builder in_rpc) {
     RpcMessage req = in_rpc.build();
-    RpcMessage resp = null;
-    mBluetoothAdapter.cancelDiscovery();
 
-    BluetoothSocket mmSocket = mmDevice.createRfcommSocketToServiceRecord(uuid);
     try {
-      mmSocket.connect();
-        
+      connect();
+
       OutputStream os = mmSocket.getOutputStream();
-      InputStream is = mmSocket.getInputStream();
-      is.skip(is.available()); // Make sure we don't have any wonky data
       
       int serializedSize = req.getSerializedSize();
   
@@ -54,25 +113,19 @@ public class BluetoothConnection {
   
       req.writeTo(toSend, 2, toSend.length - 2);
       Log.i("BluetoothConnection", String.format("%s: <- %s", mmDevice.getAddress(), req.toString()));
-  
+      lastMillis = System.currentTimeMillis();
+
       os.write(toSend);
       os.flush(); 
-  
-      int bytes = is.read() << 8;
-      bytes += is.read();
-  
-      byte buffer[] = new byte[bytes];
-      for(int offset = 0;offset < bytes;) {
-        offset += is.read(buffer, offset, bytes - offset);
-      }
-      resp = wire.parseFrom(buffer,  RpcMessage.class);
-      Log.i("BluetoothConnection", String.format("%s: -> %s", mmDevice.getAddress(), resp.toString()));
-
-      resp = wire.parseFrom(buffer, RpcMessage.class);
-  
-    } finally  {
-      mmSocket.close();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+      disconnect();
+      return false;
+    } catch (IOException e) {
+      e.printStackTrace();
+      disconnect();
+      return false;
     }
-    return resp;
+    return true;
   }
 }
